@@ -1,0 +1,59 @@
+package config
+
+import (
+	"os"
+
+	"github.com/pelletier/go-toml/v2"
+)
+
+type Config struct {
+	Custom Custom `toml:"custom"`
+}
+type Agent struct {
+	Name         string   `toml:"name"`
+	Desc         string   `toml:"desc"`
+	SystemPrompt string   `toml:"system_prompt"`
+	BaseURL      string   `toml:"base_url"`
+	APIKey       string   `toml:"api_key"`
+	ModelName    string   `toml:"model_name"`
+	Tools        []string `toml:"tools,omitempty"`
+}
+
+type Custom struct {
+	Moderator  Agent       `toml:"moderator"`
+	Agents     []Agent     `toml:"agents"`
+	MCPServers []MCPServer `toml:"mcp_servers"`
+}
+
+type MCPServer struct {
+	Name          string   `toml:"name"`
+	Desc          string   `toml:"desc"`
+	Enabled       bool     `toml:"enabled"`
+	Timeout       int      `toml:"timeout"`
+	URL           string   `toml:"url,omitempty"`
+	Command       string   `toml:"command,omitempty"`  // Command: "uvx" or "npx"
+	EnvVars       []string `toml:"env_vars,omitempty"` // Environment variables for stdio
+	Args          []string `toml:"args,omitempty"`     // Command arguments array
+	TransportType string   `toml:"transport_type"`
+}
+
+func Unmarshal(filePath string, v any) error {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return err
+	}
+	err = toml.Unmarshal(data, v)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func Get() (*Config, error) {
+	var config Config
+	err := Unmarshal("config/config.toml", &config)
+	if err != nil {
+		return nil, err
+	}
+	return &config, nil
+}
