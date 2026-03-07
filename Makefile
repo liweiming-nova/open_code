@@ -1,0 +1,2 @@
+init:
+	go run . init
