@@ -7,11 +7,11 @@ require (
 	github.com/PuerkitoBio/goquery v1.11.0
 	github.com/cloudwego/eino v0.7.37
 	github.com/cloudwego/eino-ext/components/tool/mcp v0.0.8
-	github.com/coreos/go-semver v0.3.1
 	github.com/corpix/uarand v0.2.0
 	github.com/eino-contrib/jsonschema v1.0.3
 	github.com/go-git/go-git/v5 v5.17.0
 	github.com/google/uuid v1.6.0
+	github.com/joho/godotenv v1.5.1
 	github.com/mark3labs/mcp-go v0.44.1
 	github.com/pelletier/go-toml/v2 v2.0.9
 	github.com/pkg/sftp v1.13.10
@@ -19,7 +19,6 @@ require (
 	github.com/spf13/afero v1.15.0
 	github.com/urfave/cli/v3 v3.7.0
 	github.com/wk8/go-ordered-map/v2 v2.1.8
-	github.com/wsshow/dl v1.0.5
 	github.com/wsshow/docreader v1.1.1
 	github.com/wsshow/selfupdate v1.0.0
 	github.com/xuri/excelize/v2 v2.10.1

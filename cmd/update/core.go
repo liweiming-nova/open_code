@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/liweiming-nova/open_code/errors"
+	"github.com/liweiming-nova/open_code/pkg/downloader"
 	"github.com/liweiming-nova/open_code/pkg/semver"
 	"github.com/liweiming-nova/open_code/pkg/sum"
 	"github.com/liweiming-nova/open_code/pkg/zip"
@@ -83,19 +84,16 @@ func (up Updater) Apply(rel *Release,
 	findAsset func([]Asset) (idx int),
 	findChecksum func([]Asset) (algo sum.Algorithm, expectedChecksum string, err error),
 ) error {
-	// findDownloadLink locates asset download URL.
 	idx := findAsset(rel.Assets)
 	if idx < 0 {
 		return errors.ErrAssetNotFound
 	}
 
-	// findChecksum verifies file integrity hash.
 	algo, expectedChecksum, err := findChecksum(rel.Assets)
 	if err != nil {
 		return err
 	}
 
-	// downloadFile fetches remote resource.
 	tmpDir, err := os.MkdirTemp("", strconv.FormatInt(time.Now().UnixNano(), 10))
 	if err != nil {
 		return err
@@ -103,21 +101,21 @@ func (up Updater) Apply(rel *Release,
 	defer os.RemoveAll(tmpDir)
 
 	downloadURL := rel.Assets[idx].BrowserDownloadURL
-	srcFilename := filepath.Join(tmpDir, filepath.Base(downloadURL))
+	srcFilename := filepath.Join(tmpDir, deriveFilename(downloadURL))
 	dstFilename := srcFilename
 
-	// 配置HTTP客户端
 	proxyStr := os.Getenv("FEIKONG_PROXY_URL")
 	var proxyFunc func(*http.Request) (*url.URL, error)
 	if proxyStr != "" {
-		proxyURL, err := url.Parse(proxyStr)
-		if err != nil {
-			return fmt.Errorf("invalid FEIKONG_PROXY_URL: %w", err)
+		proxyURL, parseErr := url.Parse(proxyStr)
+		if parseErr != nil {
+			return fmt.Errorf("invalid FEIKONG_PROXY_URL: %w", parseErr)
 		}
 		proxyFunc = http.ProxyURL(proxyURL)
 	} else {
 		proxyFunc = http.ProxyFromEnvironment
 	}
+
 	transport := &http.Transport{
 		Proxy:                 proxyFunc,
 		MaxIdleConns:          100,
@@ -127,56 +125,54 @@ func (up Updater) Apply(rel *Release,
 	}
 	httpClient := &http.Client{
 		Transport: transport,
-		Timeout:   time.Second * 30,
+		Timeout:   30 * time.Minute,
 	}
 
-	// 设置进度回调
-	var lastProgress float64
-	downloader.OnProgress(func(loaded, total int64, rate string) {
-		progress := float64(loaded) / float64(total) * 100
-		// 只在进度变化超过0.5%时更新显示
-		if progress-lastProgress >= 0.5 || progress >= 100 {
-			lastProgress = progress
-
-			// 生成进度条
-			barWidth := 40
-			filledWidth := int(progress / 100 * float64(barWidth))
-			bar := ""
-			for i := range barWidth {
-				if i < filledWidth {
-					bar += "█"
-				} else {
-					bar += "░"
-				}
-			}
-
-			// 显示进度
-			fmt.Printf("\r[%s] %.2f%% | %s/%s | %s    ",
-				bar, progress, formatFileSize(float64(loaded)), formatFileSize(float64(total)), rate)
+	dl := downloader.New(downloadURL, srcFilename, httpClient)
+	var lastProgress float64 = -1
+	dl.OnProgress(func(loaded, total int64, rate string) {
+		if total <= 0 {
+			fmt.Printf("\r已下载 %s | %s    ", formatFileSize(float64(loaded)), rate)
+			return
 		}
+
+		progress := float64(loaded) / float64(total) * 100
+		if lastProgress >= 0 && progress-lastProgress < 0.5 && progress < 100 {
+			return
+		}
+		lastProgress = progress
+
+		barWidth := 40
+		filledWidth := int(progress / 100 * float64(barWidth))
+		if filledWidth < 0 {
+			filledWidth = 0
+		}
+		if filledWidth > barWidth {
+			filledWidth = barWidth
+		}
+		bar := strings.Repeat("#", filledWidth) + strings.Repeat("-", barWidth-filledWidth)
+		fmt.Printf("\r[%s] %.2f%% | %s/%s | %s    ",
+			bar, progress, formatFileSize(float64(loaded)), formatFileSize(float64(total)), rate)
 	})
 
-	// 开始下载
-	if err := downloader.Start(); err != nil {
+	if err := dl.Start(); err != nil {
 		fmt.Printf("下载失败: %v\n", err)
 		return err
 	}
+	fmt.Println()
 
-	// 校验文件完整性
-	fmt.Printf("\n基于 %s 校验文件完整性...\n", algo)
+	fmt.Printf("基于 %s 校验文件完整性...\n", algo)
 	if err = sum.VerifyFile(algo, expectedChecksum, srcFilename); err != nil {
 		return err
 	}
-	fmt.Printf("文件完整性校验通过\n")
+	fmt.Println("文件完整性校验通过")
 
-	// 解压缩文件（如果需要）
 	if rel.Assets[idx].IsCompressedFile() {
 		if dstFilename, err = up.unarchive(srcFilename, tmpDir); err != nil {
 			return err
 		}
 	}
 
-	// 应用更新
 	dstFile, err := os.Open(dstFilename)
 	if err != nil {
 		return err
@@ -192,7 +188,7 @@ func (up Updater) unarchive(srcFile, dstDir string) (dstFile string, err error) 
 	}); err != nil {
 		return "", err
 	}
-	// locateTargetFile finds the main executable after extraction.
+
 	fis, _ := os.ReadDir(dstDir)
 	for _, fi := range fis {
 		if strings.HasSuffix(fi.Name(), ".md") ||
@@ -208,6 +204,20 @@ func (up Updater) unarchive(srcFile, dstDir string) (dstFile string, err error) 
 // IsHttpSuccess determines if the HTTP status code indicates successful response.
 func IsHttpSuccess(statusCode int) bool {
 	return statusCode >= http.StatusOK && statusCode < http.StatusMultipleChoices
+}
+
+func deriveFilename(downloadURL string) string {
+	if parsed, err := url.Parse(downloadURL); err == nil {
+		name := filepath.Base(parsed.Path)
+		if name != "" && name != "." && name != "/" {
+			return name
+		}
+	}
+	name := filepath.Base(downloadURL)
+	if name == "" || name == "." || name == "/" {
+		return "download.bin"
+	}
+	return name
 }
 
 // formatFileSize converts file size in bytes to human-readable string.
