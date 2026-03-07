@@ -13,3 +13,4 @@ release/
 .env.production.local
 .logs/
 go.sum
+.gocache/
