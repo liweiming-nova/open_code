@@ -27,7 +27,7 @@ func setupMCPClients(ctx context.Context) (mcpClients []MCPClient, err error) {
 		return nil, fmt.Errorf("failed to get config: %v", err)
 	}
 
-	mcpServerConfigs := cfg.Custom.MCPServers
+	mcpServerConfigs := cfg.CustomAgent.MCPServers
 
 	for _, mcpServerConfig := range mcpServerConfigs {
 

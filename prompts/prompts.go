@@ -12,28 +12,23 @@ import (
 
 // Prompts 结构化 Prompt 定义
 type Prompts struct {
-	Role         string `json:"role"`
-	Context      string `json:"context"`
-	Capabilities string `json:"capabilities"`
-	Constraints  string `json:"constraints"` // 修正拼写
-	Workflow     string `json:"workflow"`
-	OutputFormat string `json:"output_format"`
-	FewShot      string `json:"few_shot"`
+	Role         string `json:"role" toml:"role"`
+	Context      string `json:"context" toml:"context"`
+	Capabilities string `json:"capabilities" toml:"capabilities"`
+	Constraints  string `json:"constraints" toml:"constraints"`
+	Workflow     string `json:"workflow" toml:"workflow"`
+	OutputFormat string `json:"output_format" toml:"output_format"`
+	FewShot      string `json:"few_shot" toml:"few_shot"`
 }
 
 // Format 将 Prompts 自身格式化为最终 Prompt 字符串（支持变量注入）
-// - 先使用 PromptFormatter 根据结构化字段生成基础 Prompt
-// - 再使用 Prompts.Variables 进行自定义占位符替换（{var_name}）
-// - 最后交给 SecureFormatter 做运行时变量解析与结构安全校验
 func (p *Prompts) Format(ctx context.Context) (string, error) {
-	// 1. 使用结构化模板生成基础 Prompt
 	pf := NewPromptFormatter()
 	basePrompt, err := pf.Format(*p)
 	if err != nil {
 		return "", err
 	}
 	rendered := basePrompt
-	// 3. 使用 SecureFormatter 做运行时变量解析 + 结构校验
 	sf := NewSecureFormatter(variable.GlobalRegistry).WithStrictMode(true)
 	return sf.Format(ctx, rendered)
 }
@@ -52,8 +47,6 @@ func NewPromptFormatter() *PromptFormatter {
 
 // Format 将结构化数据格式化为 Prompt 字符串
 func (pf *PromptFormatter) Format(prompts Prompts) (string, error) {
-
-	// 1. 构建模板数据
 	templateData := map[string]string{
 		"Role":         prompts.Role,
 		"Context":      prompts.Context,
@@ -64,7 +57,6 @@ func (pf *PromptFormatter) Format(prompts Prompts) (string, error) {
 		"FewShot":      prompts.FewShot,
 	}
 
-	// 2. 渲染模板
 	tmpl, err := template.New("prompt").Parse(pf.template)
 	if err != nil {
 		return "", fmt.Errorf("parse template failed: %w", err)
@@ -75,7 +67,6 @@ func (pf *PromptFormatter) Format(prompts Prompts) (string, error) {
 		return "", fmt.Errorf("execute template failed: %w", err)
 	}
 
-	// 3. 清理多余空行
 	return pf.cleanupOutput(buf.String()), nil
 }
 
@@ -101,7 +92,7 @@ func (pf *PromptFormatter) cleanupOutput(text string) string {
 	return strings.Join(cleaned, "\n")
 }
 
-// buildDefaultTemplate 构建默认模板（匹配您的 analystPrompt 风格）
+// buildDefaultTemplate 构建默认模板
 func buildDefaultTemplate() string {
 	return `{{if .Role}}
 # {{.Role}}

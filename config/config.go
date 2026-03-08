@@ -3,20 +3,21 @@ package config
 import (
 	"os"
 
+	"github.com/liweiming-nova/open_code/chatmodel"
+	"github.com/liweiming-nova/open_code/prompts"
 	"github.com/pelletier/go-toml/v2"
 )
 
 type Config struct {
-	Custom Custom `toml:"custom"`
+	CustomAgent Custom `toml:"custom"`
 }
 type Agent struct {
-	Name         string   `toml:"name"`
-	Desc         string   `toml:"desc"`
-	SystemPrompt string   `toml:"system_prompt"`
-	BaseURL      string   `toml:"base_url"`
-	APIKey       string   `toml:"api_key"`
-	ModelName    string   `toml:"model_name"`
-	Tools        []string `toml:"tools,omitempty"`
+	Name         string                    `toml:"name"`
+	Desc         string                    `toml:"desc"`
+	SystemPrompt prompts.Prompts           `toml:"system_prompt"`
+	ModelName    string                    `toml:"model_name"`
+	Tools        []string                  `toml:"tools,omitempty"`
+	ChatModel    chatmodel.ChatModelConfig `toml:"chat_model,omitempty"`
 }
 
 type Custom struct {

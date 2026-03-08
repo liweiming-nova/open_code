@@ -7,7 +7,10 @@ import (
 	"github.com/cloudwego/eino/adk"
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/compose"
-	"github.com/liweiming-nova/open_code/consts"
+	"github.com/liweiming-nova/open_code/agents/common"
+	"github.com/liweiming-nova/open_code/chatmodel"
+	"github.com/liweiming-nova/open_code/config"
+	"github.com/liweiming-nova/open_code/enums"
 	"github.com/liweiming-nova/open_code/pkg/logger"
 	"github.com/liweiming-nova/open_code/tools/doc"
 	"github.com/liweiming-nova/open_code/tools/excel"
@@ -18,15 +21,16 @@ import (
 	"go.uber.org/zap"
 )
 
-func NewAgent() adk.Agent {
-	ctx := context.Background()
+var analystAgent config.Agent
+
+func NewAgent(ctx context.Context) adk.Agent {
 
 	prompt, err := loadPrompt(ctx)
 	if err != nil {
 		logger.Fatal(ctx, "load prompt failed", zap.Error(err))
 	}
 
-	baseDir, ok := variable.GlobalRegistry.Get(consts.SystemVariableWorkspaceDir.String())
+	baseDir, ok := variable.GlobalRegistry.Get(enums.SystemVariableWorkspaceDir.String())
 	if !ok {
 		logger.Fatal(ctx, "无法获取工作目录系统变量")
 	}
@@ -95,11 +99,15 @@ func NewAgent() adk.Agent {
 		Name:          "分析师",
 		Description:   "分析师，擅长使用 Excel、Python 脚本和文档处理工具，从复杂数据和文档中提取有价值的信息并提供专业洞察。",
 		Instruction:   instruction,
-		Model:         nil,
-		MaxIterations: 10,
+		Model:         chatmodel.NewChatModel(ctx),
+		MaxIterations: common.MaxIterations,
+		ModelRetryConfig: &adk.ModelRetryConfig{
+			MaxRetries:  common.MaxRetries,
+			IsRetryAble: common.IsRetryAble,
+		},
 		ToolsConfig: adk.ToolsConfig{
 			ToolsNodeConfig: compose.ToolsNodeConfig{
-				Tools: nil,
+				Tools: toolList,
 			},
 		},
 	})
