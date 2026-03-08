@@ -1,4 +1,5 @@
 .env
+config/config.toml
 release/
 .DS_Store
 *.log

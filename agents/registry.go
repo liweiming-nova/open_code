@@ -88,7 +88,7 @@ func loadCustomAgents(ctx context.Context) {
 			pterm.Warning.Printfln("自定义智能体 \"%s\" 与已有智能体名称重复，不建议使用相同名称", agentCfg.Name)
 		}
 
-		agent := custom.NewAgent(ctx, agentCfg)
+			agent := custom.NewAgent(ctx, agentCfg)
 
 		Registry = append(Registry, AgentInfo{
 			Name:        agentCfg.Name,

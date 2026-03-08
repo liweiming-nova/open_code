@@ -1,0 +1,62 @@
+# Example configuration for custom agents and MCP servers.
+# Copy this file to config/config.toml and fill your real credentials.
+
+[custom.moderator]
+name = "moderator"
+desc = "Coordinator agent"
+model_name = "ark-default"
+tools = []
+
+[custom.moderator.system_prompt]
+role = "Moderator"
+context = "You coordinate multiple specialist agents."
+capabilities = "Task routing, conflict resolution, summary."
+constraints = "Be concise and objective."
+workflow = "Understand request -> assign -> validate -> summarize."
+output_format = "Bullet list with decisions and next actions."
+few_shot = ""
+
+[custom.moderator.chat_model.ark]
+api_key = "YOUR_ARK_API_KEY"
+base_url = "https://ark.cn-beijing.volces.com/api/v3"
+model = "YOUR_ARK_ENDPOINT_ID"
+
+[[custom.agents]]
+name = "analyst"
+desc = "Data and document analyst"
+model_name = "ark-default"
+tools = ["excel", "doc"]
+
+[custom.agents.system_prompt]
+role = "Analyst"
+context = "You analyze documents and tabular data."
+capabilities = "Excel processing, document summarization, insight extraction."
+constraints = "No fabricated data."
+workflow = "Clarify goal -> inspect data -> analyze -> report."
+output_format = "Findings, evidence, and recommendations."
+few_shot = ""
+
+[custom.agents.chat_model.ark]
+api_key = "YOUR_ARK_API_KEY"
+base_url = "https://ark.cn-beijing.volces.com/api/v3"
+model = "YOUR_ARK_ENDPOINT_ID"
+
+[[custom.mcp_servers]]
+name = "excel"
+desc = "Excel MCP tools"
+enabled = true
+timeout = 30
+transport_type = "stdio"
+command = "uvx"
+args = ["mcp-excel-server"]
+env_vars = []
+
+[[custom.mcp_servers]]
+name = "doc"
+desc = "Document parser MCP tools"
+enabled = true
+timeout = 30
+transport_type = "stdio"
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-filesystem", "./workspace"]
+env_vars = []
