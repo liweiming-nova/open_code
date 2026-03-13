@@ -10,6 +10,38 @@ import (
 
 type Config struct {
 	CustomAgent Custom `toml:"custom"`
+	Plugins     Plugins `toml:"plugins"`
+}
+
+type Plugins struct {
+	Knowledge KnowledgePlugin `toml:"knowledge"`
+}
+
+type KnowledgePlugin struct {
+	Enabled   bool                  `toml:"enabled"`
+	Dir       string                `toml:"dir"`
+	StateFile string                `toml:"state_file"`
+	ChunkSize int                   `toml:"chunk_size"`
+	Overlap   int                   `toml:"overlap"`
+	Redis     KnowledgeRedisConfig  `toml:"redis"`
+	Embedding KnowledgeEmbedConfig  `toml:"embedding"`
+}
+
+type KnowledgeRedisConfig struct {
+	Addr           string `toml:"addr"`
+	Password       string `toml:"password"`
+	DB             int    `toml:"db"`
+	KeyPrefix      string `toml:"key_prefix"`
+	IndexName      string `toml:"index_name"`
+	DistanceMetric string `toml:"distance_metric"`
+}
+
+type KnowledgeEmbedConfig struct {
+	BaseURL   string `toml:"base_url"`
+	APIKey    string `toml:"api_key"`
+	Model     string `toml:"model"`
+	Dimension int    `toml:"dimension"`
+	BatchSize int    `toml:"batch_size"`
 }
 type Agent struct {
 	Name         string                    `toml:"name"`

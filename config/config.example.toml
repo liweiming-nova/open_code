@@ -60,3 +60,25 @@ transport_type = "stdio"
 command = "npx"
 args = ["-y", "@modelcontextprotocol/server-filesystem", "./workspace"]
 env_vars = []
+
+[plugins.knowledge]
+enabled = false
+dir = "./knowlege/"
+state_file = "indexed_files.json"
+chunk_size = 1000
+overlap = 100
+
+[plugins.knowledge.redis]
+addr = "127.0.0.1:6379"
+password = ""
+db = 0
+key_prefix = "oc_kb"
+index_name = "oc_kb_idx"
+distance_metric = "COSINE"
+
+[plugins.knowledge.embedding]
+base_url = "https://api.openai.com/v1"
+api_key = "YOUR_EMBEDDING_API_KEY"
+model = "text-embedding-3-small"
+dimension = 1536
+batch_size = 32

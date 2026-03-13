@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/liweiming-nova/open_code/cmd/cinit"
+	"github.com/liweiming-nova/open_code/cmd/knowledge"
 	"github.com/liweiming-nova/open_code/cmd/update"
 	"github.com/liweiming-nova/open_code/version"
 
@@ -16,6 +17,7 @@ func Root() *ucli.Command {
 		Version: version.Get().String(),
 		Commands: []*ucli.Command{
 			cinit.InitCommand(),
+			knowledge.KnowledgeCommand(),
 			update.UpdateCommand(),
 		},
 		Flags: []ucli.Flag{},

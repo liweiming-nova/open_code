@@ -7,7 +7,7 @@ import (
 	"github.com/pterm/pterm"
 )
 
-// CommandHandler 命令处理器
+// CommandHandler 命令处理器a
 type CommandHandler struct {
 	modeSwitcher    ModeSwitcher
 	commandHandlers map[enums.CommandName]func(rawInput string) enums.CommandResult
